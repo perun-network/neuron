@@ -12,6 +12,7 @@ import HistoryDetailPage from 'components/HistoryDetailPage'
 import LaunchScreen from 'components/LaunchScreen'
 import PasswordRequest from 'components/PasswordRequest'
 import NervosDAO from 'components/NervosDAO'
+import Perun from 'components/Perun'
 import NervosDAODetail from 'components/NervosDAODetail'
 import SpecialAssetList from 'components/SpecialAssetList'
 import SUDTAccountList from 'components/SUDTAccountList'
@@ -176,6 +177,21 @@ const mainRouterConfig: RouteObject[] = [
             element: (
               <>
                 <NervosDAODetail />
+                <Outlet />
+              </>
+            ),
+            children: [...toolsRouters],
+          },
+        ],
+      },
+      {
+        path: RoutePath.Perun,
+        children: [
+          {
+            path: '',
+            element: (
+              <>
+                <Perun />
                 <Outlet />
               </>
             ),

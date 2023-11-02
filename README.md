@@ -77,6 +77,10 @@ $ yarn test
 
 If you don't want to bother building from source, you can download a binary from [releases](https://github.com/nervosnetwork/neuron/releases). We offer pre-built binaries for Windows, Linux and macOS.
 
+## Use Perun Channels
+
+To use the Perun Channels you need to clone the perun-wallet-wrapper and link it to the src file of this project. Additionally uncomments all necessary functions and imports in the neuon-ui/src/components/Perun/index.tsx file.
+
 ## License
 
 Neuron is released under the terms of the MIT license. See [COPYING](COPYING) for more information or see [https://opensource.org/licenses/MIT](https://opensource.org/licenses/MIT).

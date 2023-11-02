@@ -17,6 +17,7 @@
       "history": "History",
       "addresses": "Addresses",
       "nervos-dao": "Nervos DAO",
+      "perun": "Perun Channels",
       "settings": "Settings",
       "special-assets": "Customized Assets",
       "sync-not-start": "Sync not started yet",
@@ -741,6 +742,24 @@
       "cell-from-cellbase": "From cellbase",
       "cancel": "Cancel",
       "next": "Next"
+    },
+    "perun": {
+      "open-channel": "Open Perun Channel",
+      "insert-Addresses": "Insert the sender- and receiver-address",
+      "update-channel": "update Channel",
+      "close-channel": "close Channel",
+      "event-manager": "Channel events",
+      "insert-amount": "Insert the amount you want to deposit",
+      "amount": "amount",
+      "peer-address": "Peer Address",
+      "challenge-duration": "Challenge duration",
+      "channels": "Perun Channels",
+      "no-open": "No open Channels yet",
+      "rejection-reason": "Rejection reason",
+      "ok": "Okay",
+      "enter-amount": "Please enter the amount you want to swap",
+      "state": "State"
+
     },
     "lock-info-dialog": {
       "address-info": "Address Information",
