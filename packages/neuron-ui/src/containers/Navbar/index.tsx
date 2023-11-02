@@ -7,7 +7,7 @@ import { VerifyExternalCkbNodeRes, checkForUpdates, getVersion, verifyExternalCk
 import { AppUpdater as AppUpdaterSubject } from 'services/subjects'
 import Badge from 'widgets/Badge'
 import Logo from 'widgets/Icons/Logo.png'
-import { Overview, History, NervosDAO, Settings, Experimental, MenuExpand, ArrowNext } from 'widgets/Icons/icon'
+import { Overview, History, NervosDAO, Perun, Settings, Experimental, MenuExpand, ArrowNext } from 'widgets/Icons/icon'
 import { RoutePath, clsx, isSuccessResponse, useOnLocaleChange } from 'utils'
 import Tooltip from 'widgets/Tooltip'
 
@@ -19,6 +19,7 @@ const menuItems = [
   { name: 'navbar.overview', key: RoutePath.Overview, url: RoutePath.Overview, icon: <Overview /> },
   { name: 'navbar.history', key: RoutePath.History, url: RoutePath.History, icon: <History /> },
   { name: 'navbar.nervos-dao', key: RoutePath.NervosDAO, url: RoutePath.NervosDAO, icon: <NervosDAO /> },
+  { name: 'navbar.perun', key: RoutePath.Perun, url: RoutePath.Perun, icon: <Perun /> },
   { name: 'navbar.settings', key: RoutePath.Settings, url: RoutePath.Settings, icon: <Settings /> },
   {
     name: 'navbar.experimental-functions',

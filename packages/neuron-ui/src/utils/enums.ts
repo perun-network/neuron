@@ -27,6 +27,7 @@ export enum RoutePath {
   OfflineSign = 'offline-sign',
   SignVerify = 'sign-verify',
   MultisigAddress = 'multisig-address',
+  Perun = '/perun',
 }
 
 export enum CapacityUnit {
