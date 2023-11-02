@@ -51,6 +51,7 @@ import { ReactComponent as LockSvg } from './Lock.svg'
 import { ReactComponent as LockCellSvg } from './LockCell.svg'
 import { ReactComponent as UnLockSvg } from './Unlock.svg'
 import { ReactComponent as ConsumeSvg } from './Consume.svg'
+import { ReactComponent as PerunSvg } from './Perun.svg'
 
 import styles from './icon.module.scss'
 
@@ -118,3 +119,4 @@ export const Lock = WrapSvg(LockSvg, styles.withTheme)
 export const LockCell = WrapSvg(LockCellSvg)
 export const UnLock = WrapSvg(UnLockSvg)
 export const Consume = WrapSvg(ConsumeSvg)
+export const Perun = WrapSvg(PerunSvg)
