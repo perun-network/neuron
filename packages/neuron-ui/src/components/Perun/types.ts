@@ -36,7 +36,7 @@ export class Allocation {
   }
 }
 
-export class ChannelState /* implements State */ {
+export class ChannelState {
   id: Uint8Array
   version: number
   app: Uint8Array

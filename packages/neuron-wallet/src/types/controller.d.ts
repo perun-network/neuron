@@ -61,11 +61,41 @@ declare namespace Controller {
       password: string
     }
 
+    interface SignRawParams {
+      walletID: string
+      address: string
+      password: string
+      message: string
+    }
+
     interface SignParams {
       walletID: string
       address: string
       password: string
       message: string
+    }
+    interface OpenChannelParams {
+      me: Uint8Array
+      peer: Uint8Array
+      balances: [Uint8Array, Uint8Array]
+      challengeDuration: number
+    }
+    interface UpdateChannelParams {
+      channelId: Uint8Array
+      index: number
+      amount: bigint
+    }
+    interface CloseChannelParams {
+      channelId: Uint8Array
+    }
+    interface PerunServiceActionParams {
+      type: 'open' | 'update' | 'close'
+      payload: OpenChannelParams | UpdateChannelParams | CloseChannelParams
+    }
+
+    interface RespondPerunRequestParams {
+      type: 'SignMessage' | 'SignTransaction'
+      response: { data: any }
     }
 
     interface VerifyParams {
