@@ -16,6 +16,8 @@ import MigrateSubject from '../../models/subjects/migrate-subject'
 import startMonitor, { stopMonitor } from '../../services/monitor'
 import { clearCkbNodeCache } from '../../services/ckb-runner'
 import ShowGlobalDialogSubject from '../../models/subjects/show-global-dialog'
+import PerunRequestSubject from '../../models/subjects/perun'
+import logger from '../../utils/logger'
 
 interface AppResponder {
   sendMessage: (channel: string, arg: any) => void
@@ -49,6 +51,12 @@ export const subscribe = (dispatcher: AppResponder) => {
     // dispatcher.sendMessage('synced-block-number-updated', params)
 
     dispatcher.runCommand('migrate-acp', '')
+  })
+
+  PerunRequestSubject.pipe(debounceTime(50)).subscribe(request => {
+    // Forward backend signing requests to the renderer process.
+    logger.info('forwarding backend signing request to the renderer process')
+    dispatcher.sendMessage('perun-request', request)
   })
 
   CommandSubject.subscribe(params => {

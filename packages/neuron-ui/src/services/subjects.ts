@@ -31,7 +31,8 @@ const SubjectConstructor = <T>(
     | 'device-sign-index'
     | 'multisig-output-update'
     | 'migrate'
-    | 'show-global-dialog',
+    | 'show-global-dialog'
+    | 'perun-request',
   isMulti?: boolean
 ) => {
   return ipcRenderer
@@ -69,6 +70,7 @@ export const SetLocale = SubjectConstructor<(typeof LOCALES)[number]>('set-local
 export const DeviceSignIndex = SubjectConstructor<Subject.SignIndex>('device-sign-index')
 export const MultisigOutputUpdate = SubjectConstructor<string>('multisig-output-update')
 export const Migrate = SubjectConstructor<'need-migrate' | 'migrating' | 'failed' | 'finish'>('migrate', true)
+export const PerunState = SubjectConstructor<Subject.PerunState>('perun-request')
 
 export default {
   DataUpdate,
@@ -78,6 +80,7 @@ export default {
   CurrentNetworkID,
   ConnectionStatus,
   SyncState,
+  PerunState,
   AppUpdater,
   Command,
   Navigation,
