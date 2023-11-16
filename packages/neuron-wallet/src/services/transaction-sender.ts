@@ -110,10 +110,14 @@ export default class TransactionSender {
     skipLastInputs: boolean = true,
     context?: RPC.RawTransaction[]
   ) {
+    logger.info(`trying to sign transaction with wallet ${walletID}`)
     const wallet = this.walletService.get(walletID)
     const tx = Transaction.fromObject(transaction)
+    logger.info('computing tx hash')
     const txHash: string = tx.computeHash()
+    logger.info(`tx hash is: ${txHash}`)
     if (wallet.isHardware()) {
+      logger.info('signing with hardware wallet')
       let device = HardwareWalletService.getInstance().getCurrent()
       if (!device) {
         const wallet = WalletService.getInstance().getCurrent()
@@ -130,11 +134,13 @@ export default class TransactionSender {
         throw new SignTransactionFailed(err.message)
       }
     }
+    logger.info('TX INPUTS', tx.inputs)
 
     // Only one multi sign input now.
     const isMultisig =
       tx.inputs.length === 1 && tx.inputs[0].lock!.args.length === TransactionSender.MULTI_SIGN_ARGS_LENGTH
 
+    logger.info("retrieving addresses' private keys")
     const addressInfos = await this.getAddressInfos(walletID)
     const multiSignBlake160s = isMultisig
       ? addressInfos.map(i => {
@@ -164,6 +170,7 @@ export default class TransactionSender {
       return pathAndPrivateKey.privateKey
     }
 
+    logger.info('preparing witness signing entries')
     const witnessSigningEntries: SignInfo[] = tx.inputs
       .slice(0, skipLastInputs ? -1 : tx.inputs.length)
       .map((input: Input, index: number) => {
@@ -179,15 +186,19 @@ export default class TransactionSender {
         }
       })
 
+    logger.info('accumulating lock hashes')
     const lockHashes = new Set(witnessSigningEntries.map(w => w.lockHash))
 
     for (const lockHash of lockHashes) {
+      logger.info(`processing lock hash: ${lockHash}`)
       const witnessesArgs = witnessSigningEntries.filter(w => w.lockHash === lockHash)
       // A 65-byte empty signature used as placeholder
       witnessesArgs[0].witnessArgs.setEmptyLock()
 
+      logger.info(`finding private key for args: ${witnessesArgs[0].lockArgs}`)
       const privateKey = findPrivateKey(witnessesArgs[0].lockArgs)
 
+      logger.info(`serializing witnesses`)
       const serializedWitnesses: (WitnessArgs | string)[] = witnessesArgs.map((value: SignInfo, index: number) => {
         const args = value.witnessArgs
         if (index === 0) {
@@ -216,6 +227,7 @@ export default class TransactionSender {
         wit.lock = serializedMultisig + wit.lock!.slice(2)
         signed[0] = serializeWitnessArgs(wit.toSDK())
       } else {
+        logger.info('signing witnesses')
         signed = signWitnesses({
           privateKey,
           transactionHash: txHash,
@@ -233,6 +245,7 @@ export default class TransactionSender {
       }
     }
 
+    logger.info('setting witnesses')
     tx.witnesses = witnessSigningEntries.map(w => w.witness)
     tx.hash = txHash
 

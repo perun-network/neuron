@@ -34,6 +34,7 @@ import AddressParser from '../models/address-parser'
 import MultisigConfigModel from '../models/multisig-config'
 import NodeService from '../services/node'
 import { generateRPC } from '../utils/ckb-rpc'
+import { AddressType } from '@ckb-lumos/hd'
 
 export default class WalletsController {
   public async getAll(): Promise<Controller.Response<Pick<Wallet, 'id' | 'name' | 'device'>[]>> {
@@ -147,6 +148,21 @@ export default class WalletsController {
     }
   }
 
+  public async getCurrentAccountExtendedPubKey(type: AddressType, index: number): Promise<Controller.Response<string>> {
+    const walletsService = WalletsService.getInstance()
+    const wallet = walletsService.getCurrent()
+    if (!wallet) {
+      return {
+        status: ResponseCode.Fail,
+      }
+    }
+    const accountExtendedPublicKey = wallet.accountExtendedPublicKey()
+    return {
+      status: ResponseCode.Success,
+      result: accountExtendedPublicKey.addressPublicKey(type, index),
+    }
+  }
+
   public async importKeystore({
     name,
     password,
@@ -176,6 +192,7 @@ export default class WalletsController {
       accountKeychain.publicKey.toString('hex'),
       accountKeychain.chainCode.toString('hex')
     )
+    logger.info(`extended-pubkey: ${accountExtendedPublicKey.serialize()}`)
 
     const walletsService = WalletsService.getInstance()
     const wallet = walletsService.create({

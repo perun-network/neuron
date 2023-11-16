@@ -90,7 +90,7 @@ export abstract class Wallet {
   }
 
   public accountExtendedPublicKey = (): AccountExtendedPublicKey => {
-    throw new WalletFunctionNotSupported(this.accountExtendedPublicKey.name)
+    return AccountExtendedPublicKey.parse(this.extendedKey)
   }
 
   public update = ({

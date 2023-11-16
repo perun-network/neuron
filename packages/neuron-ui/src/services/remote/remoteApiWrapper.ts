@@ -56,6 +56,7 @@ type Action =
   | 'set-current-wallet'
   | 'import-mnemonic'
   | 'import-keystore'
+  | 'get-wallet-xpubkey'
   | 'create-wallet'
   | 'update-wallet'
   | 'delete-wallet'
@@ -69,6 +70,7 @@ type Action =
   | 'generate-mnemonic'
   | 'validate-mnemonic'
   | 'sign-message'
+  | 'sign-raw-message'
   | 'verify-signature'
   // Transactions
   | 'get-transaction-list'
@@ -151,6 +153,9 @@ type Action =
   | 'get-hold-sudt-cell-capacity'
   | 'start-migrate'
   | 'get-sync-progress-by-addresses'
+  // Perun
+  | 'respond-perun-request'
+  | 'perun-service-action'
 
 export const remoteApi =
   <P = any, R = any>(action: Action) =>

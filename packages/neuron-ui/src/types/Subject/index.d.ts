@@ -69,4 +69,9 @@ declare namespace Subject {
     type: 'success' | 'failed' | 'warning'
     action?: 'ok' | 'cancel'
   }
+
+  interface PerunState {
+    type: 'SignMessage' | 'SignTransaction' | 'UpdateNotification'
+    request?: any
+  }
 }
