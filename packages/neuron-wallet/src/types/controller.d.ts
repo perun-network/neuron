@@ -94,8 +94,8 @@ declare namespace Controller {
     }
 
     interface RespondPerunRequestParams {
-      type: 'SignMessage' | 'SignTransaction'
-      response: { data: any }
+      type: 'SignMessage' | 'SignTransaction' | 'UpdateNotification'
+      response: { rejected?: { reason: string }; data: any }
     }
 
     interface VerifyParams {
