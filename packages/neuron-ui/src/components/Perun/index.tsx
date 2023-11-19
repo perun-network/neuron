@@ -14,7 +14,7 @@ import {
   SerializeOffChainParticipant,
   SerializeSEC1EncodedPubKey,
 } from '@polycrypt/perun-wallet-wrapper/ckb/serialization'
-import { channelIdToString, channelIdFromString } from '@polycrypt/perun-wallet-wrapper/services'
+import { channelIdToString, channelIdFromString } from '@polycrypt/perun-wallet-wrapper/translator'
 import * as wire from '@polycrypt/perun-wallet-wrapper/wire'
 
 import { ChannelState } from './types'
@@ -332,6 +332,7 @@ const Perun = () => {
     const isFinal = false
     channels.set(channelIdToString(channelId!), new ChannelState(channelId!, version, appId, alloc, appData, isFinal))
   }
+
   const handleUpdateChannel = async (channelId: Uint8Array, amount: bigint) => {
     const res = await perunServiceAction({
       type: 'update',
@@ -371,6 +372,18 @@ const Perun = () => {
       return
     }
     channels.delete(channelIdToString(res.result.channelId))
+  }
+
+  const rejectPerunRequest = async (type: 'SignMessage' | 'SignTransaction' | 'UpdateNotification', reason: string) => {
+    await respondPerunRequest({
+      type,
+      response: {
+        rejected: {
+          reason: reason,
+        },
+        data: undefined,
+      },
+    })
   }
 
   const renderPerunRequest = useCallback(
@@ -443,7 +456,9 @@ const Perun = () => {
                     className={styles.perunModalAcceptButton}
                     onClick={() => {
                       if (perunState.type === 'UpdateNotification') {
-                        handleUpdateNotification(perunState.request)
+                        handleUpdateNotification(perunState.request).catch(err =>
+                          rejectPerunRequest(perunState.type, err.message)
+                        )
                         setShowPrompt(false)
                         return
                       }
@@ -455,6 +470,7 @@ const Perun = () => {
                   <button
                     className={styles.perunModalRejectButton}
                     onClick={() => {
+                      rejectPerunRequest(perunState.type, 'User rejected')
                       setShowPrompt(false)
                       setShowPasswordDialog(false)
                     }}
@@ -467,7 +483,9 @@ const Perun = () => {
                 <PasswordDialog
                   show={showPrompt}
                   walletName={''}
-                  onSubmit={handleSigningRequest}
+                  onSubmit={pass =>
+                    handleSigningRequest(pass).catch(err => rejectPerunRequest(perunState.type, err.message))
+                  }
                   onCancel={() => setShowPrompt(false)}
                 />
               )}

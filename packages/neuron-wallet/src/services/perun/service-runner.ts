@@ -127,6 +127,15 @@ export class PerunServiceRunner {
 
       PerunController.emiter.once('perun-response', (res: Controller.Params.RespondPerunRequestParams) => {
         console.log('PerunServiceRunner received updateNotificationResponse', res)
+        if (res.response.rejected) {
+          this.ipcReturn('updateNotificationResponse', {
+            rejected: {
+              reason: res.response.rejected.reason,
+            },
+          })
+          return resolve()
+        }
+
         this.ipcReturn('updateNotificationResponse', {
           accepted: res.response.data,
         })
@@ -147,6 +156,15 @@ export class PerunServiceRunner {
       }
 
       PerunController.emiter.once('perun-response', (res: Controller.Params.RespondPerunRequestParams) => {
+        if (res.response.rejected) {
+          this.ipcReturn('signMessageResponse', {
+            rejected: {
+              reason: res.response.rejected.reason,
+            },
+          })
+          return resolve()
+        }
+
         // walletSig is a recoverable signature
         //
         // 0x + <32-byte-r> + <32-byte-s> + <8-byte-recover>
@@ -270,6 +288,14 @@ export class PerunServiceRunner {
       }
 
       PerunController.emiter.once('perun-response', (res: Controller.Params.RespondPerunRequestParams) => {
+        if (res.response.rejected) {
+          this.ipcReturn('signTransactionResponse', {
+            rejected: {
+              reason: res.response.rejected.reason,
+            },
+          })
+          return resolve()
+        }
         const signedTx = res.response.data
         this.ipcReturn('signTransactionResponse', { transaction: signedTx })
         resolve()
