@@ -175,20 +175,28 @@ export class PerunServiceRunner {
         const sig = walletSig.startsWith('0x') ? walletSig.slice(2) : walletSig
         // r and s values are padded with 0 prefix if they are less than 32 bytes.
         // We need to remove the padding.
-        const r = bytes.bytify('0x' + sig.slice(0, 64).replace(/^(00)+/, ''))
+        const tmp_r = bytes.bytify('0x' + sig.slice(0, 64).replace(/^(00)+/, ''))
+        const first_byte = tmp_r[0]
+        let r: Uint8Array = new Uint8Array()
+        if ((first_byte & 0x80) >= 0x80) {
+          logger.info("Padding R with '00'")
+          r = new Uint8Array([0x00])
+        }
+        r = bytes.concat(r, tmp_r)
+
         const s = bytes.bytify('0x' + sig.slice(64, 128).replace(/^(00)+/, ''))
         logger.info(`full signature: ${sig}`)
         logger.info(`r before stripping padding: ${sig.slice(0, 64)}`)
         logger.info(`s before stripping padding: ${sig.slice(64, 128)}`)
-        logger.info(`r after stripping padding: ${bytes.hexify(r)}`)
+        logger.info(`r after stripping padding: ${bytes.hexify(tmp_r)}`)
         logger.info(`s after stripping padding: ${bytes.hexify(s)}`)
         const numberToHexString = (num: number) => {
           const hex = num.toString(16)
           return hex.length === 1 ? '0' + hex : hex
         }
-        const derSig = `0x30${numberToHexString(0x04 + r.length + s.length)}02${numberToHexString(r.length)}${bytes
-          .hexify(r)
-          .slice(2)}02${numberToHexString(s.length)}${bytes.hexify(s).slice(2)}`
+        const derSig = `0x30${numberToHexString(0x04 + tmp_r.length + s.length)}02${numberToHexString(
+          tmp_r.length
+        )}${bytes.hexify(tmp_r).slice(2)}02${numberToHexString(s.length)}${bytes.hexify(s).slice(2)}`
 
         // Pad the signature to 73 bytes if it is shorter than that.
         // MarkerByte = 0xff
