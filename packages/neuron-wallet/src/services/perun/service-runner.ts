@@ -257,10 +257,25 @@ export class PerunServiceRunner {
       for (const [idx, input] of sdkTx.inputs.entries()) {
         let typedInput = input as { previousOutput: { txHash: string; index: string }; since: string }
         logger.info('Fetching live cell', input.previousOutput)
-        const liveCell = await CellsService.getLiveCell(OutPoint.fromObject(input.previousOutput))
+        // Try to fetch the live cell from the database multiple times before giving up.
+        let retries = 0
+        const delay = 5_000 // 5 seconds
+        let liveCell = undefined
+        while (retries < 5) {
+          const fetchedCell = await CellsService.getLiveCell(OutPoint.fromObject(input.previousOutput))
+          if (fetchedCell) {
+            liveCell = fetchedCell
+            break
+          }
+          logger.info(`Failed to fetch live cell, retrying in ${delay}ms`)
+          await new Promise(resolve => setTimeout(resolve, delay))
+          retries++
+        }
+
         if (!liveCell) {
           return reject(new Error('Failed to fetch live cell'))
         }
+
         const resolvedInput = Input.fromObject({
           previousOutput: OutPoint.fromObject(typedInput.previousOutput),
           since: typedInput.since,
