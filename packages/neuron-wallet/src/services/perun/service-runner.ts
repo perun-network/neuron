@@ -281,7 +281,10 @@ export class PerunServiceRunner {
           const rpcTx = await rpcService.getTransaction(input.previousOutput.txHash)
           logger.info('RPC-TX:', rpcTx)
           if (rpcTx) {
+            logger.info("rpc output's index:", input.previousOutput.index)
+            logger.info("rpc outputs", rpcTx.transaction.outputs)
             liveCell = rpcTx.transaction.outputs[input.previousOutput.index]
+            logger.info("live cell found in rpc-tx's outputs:", liveCell)
             break
           }
           logger.info(`Failed to fetch live cell, retrying in ${delay}ms`)
