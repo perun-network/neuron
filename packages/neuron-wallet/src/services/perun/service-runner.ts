@@ -261,7 +261,7 @@ export class PerunServiceRunner {
         let retries = 0
         const delay = 5_000 // 5 seconds
         let liveCell = undefined
-        while (retries < 5) {
+        while (retries < 25) {
           const fetchedCell = await CellsService.getLiveCell(OutPoint.fromObject(input.previousOutput))
           if (fetchedCell) {
             liveCell = fetchedCell
