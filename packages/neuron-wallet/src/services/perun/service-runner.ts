@@ -13,6 +13,7 @@ import Transaction from '../../models/chain/transaction'
 import Input from '../../models/chain/input'
 import CellsService from '../../services/cells'
 import OutPoint from '../../models/chain/out-point'
+import { TransactionsService } from '../tx'
 
 // Architecture overview:
 //
@@ -263,6 +264,10 @@ export class PerunServiceRunner {
         let liveCell = undefined
         while (retries < 25) {
           const fetchedCell = await CellsService.getLiveCell(OutPoint.fromObject(input.previousOutput))
+          const outputs = await CellsService.getOutputsByTransactionHash(input.previousOutput.txHash)
+          logger.info('fetched outputs:', outputs)
+          const tx = await TransactionsService.get(input.previousOutput.txHash)
+          logger.info('fetched tx:', tx)
           if (fetchedCell) {
             liveCell = fetchedCell
             break
