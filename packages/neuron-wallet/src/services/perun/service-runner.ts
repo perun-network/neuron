@@ -282,8 +282,8 @@ export class PerunServiceRunner {
           logger.info('RPC-TX:', rpcTx)
           if (rpcTx) {
             logger.info("rpc output's index:", input.previousOutput.index)
-            logger.info("rpc outputs", rpcTx.transaction.outputs)
-            liveCell = rpcTx.transaction.outputs[input.previousOutput.index]
+            logger.info('rpc outputs', rpcTx.transaction.outputs)
+            liveCell = rpcTx.transaction.outputs[Number(input.previousOutput.index)]
             logger.info("live cell found in rpc-tx's outputs:", liveCell)
             break
           }
