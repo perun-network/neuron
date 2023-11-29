@@ -311,6 +311,8 @@ const Perun = () => {
     const myBalanceShannon = equalNumPaddedHex(BigInt(myBalanceCKB * 1e8))
     const peerBalanceCKB = 100
     const peerBalanceShannon = equalNumPaddedHex(BigInt(peerBalanceCKB * 1e8))
+    console.log('myaddress', myAddress)
+    console.log('myPubKey', myPubKey)
     const actionRes = await perunServiceAction({
       type: 'open',
       payload: {
