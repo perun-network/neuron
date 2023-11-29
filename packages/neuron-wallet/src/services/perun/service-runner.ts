@@ -271,13 +271,17 @@ export class PerunServiceRunner {
           logger.info('fetched outputs:', outputs)
           const tx = await TransactionsService.get(input.previousOutput.txHash)
           logger.info('fetched tx:', tx)
+          if (fetchedCell) {
+            liveCell = fetchedCell
+            break
+          }
           logger.info('USING RPC-SERVICE')
           const rpcTip = await rpcService.getTipHeader()
           logger.info('TIP:', rpcTip)
           const rpcTx = await rpcService.getTransaction(input.previousOutput.txHash)
           logger.info('RPC-TX:', rpcTx)
-          if (fetchedCell) {
-            liveCell = fetchedCell
+          if (rpcTx) {
+            liveCell = rpcTx.transaction.outputs[input.previousOutput.index]
             break
           }
           logger.info(`Failed to fetch live cell, retrying in ${delay}ms`)
