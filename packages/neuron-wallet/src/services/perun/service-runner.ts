@@ -13,7 +13,9 @@ import Transaction from '../../models/chain/transaction'
 import Input from '../../models/chain/input'
 import CellsService from '../../services/cells'
 import OutPoint from '../../models/chain/out-point'
+import RpcService from '../../services/rpc-service'
 import { TransactionsService } from '../tx'
+import NodeService from '../node'
 
 // Architecture overview:
 //
@@ -255,6 +257,7 @@ export class PerunServiceRunner {
       let sdkTx = JSON.parse(req.transaction as any, snakeCaseToCamelCase)
       // Fetch live cells from txs input-outpoints.
       let resolvedInputs = []
+      const rpcService = new RpcService(NodeService.getInstance().nodeUrl)
       for (const [idx, input] of sdkTx.inputs.entries()) {
         let typedInput = input as { previousOutput: { txHash: string; index: string }; since: string }
         logger.info('Fetching live cell', input.previousOutput)
@@ -268,6 +271,11 @@ export class PerunServiceRunner {
           logger.info('fetched outputs:', outputs)
           const tx = await TransactionsService.get(input.previousOutput.txHash)
           logger.info('fetched tx:', tx)
+          logger.info('USING RPC-SERVICE')
+          const rpcTip = await rpcService.getTipHeader()
+          logger.info('TIP:', rpcTip)
+          const rpcTx = await rpcService.getTransaction(input.previousOutput.txHash)
+          logger.info('RPC-TX:', rpcTx)
           if (fetchedCell) {
             liveCell = fetchedCell
             break
