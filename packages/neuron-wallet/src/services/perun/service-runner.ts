@@ -188,15 +188,15 @@ export class PerunServiceRunner {
         logger.info(`full signature: ${sig}`)
         logger.info(`r before stripping padding: ${sig.slice(0, 64)}`)
         logger.info(`s before stripping padding: ${sig.slice(64, 128)}`)
-        logger.info(`r after stripping padding: ${bytes.hexify(tmp_r)}`)
+        logger.info(`r after stripping padding: ${bytes.hexify(r)}`)
         logger.info(`s after stripping padding: ${bytes.hexify(s)}`)
         const numberToHexString = (num: number) => {
           const hex = num.toString(16)
           return hex.length === 1 ? '0' + hex : hex
         }
-        const derSig = `0x30${numberToHexString(0x04 + tmp_r.length + s.length)}02${numberToHexString(
-          tmp_r.length
-        )}${bytes.hexify(tmp_r).slice(2)}02${numberToHexString(s.length)}${bytes.hexify(s).slice(2)}`
+        const derSig = `0x30${numberToHexString(0x04 + r.length + s.length)}02${numberToHexString(r.length)}${bytes
+          .hexify(r)
+          .slice(2)}02${numberToHexString(s.length)}${bytes.hexify(s).slice(2)}`
 
         // Pad the signature to 73 bytes if it is shorter than that.
         // MarkerByte = 0xff
