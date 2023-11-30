@@ -237,7 +237,7 @@ export default class TransactionSender {
       }
     }
 
-    const witnessesToInclude = tx.witnesses.slice(0, startSecpIndex + 1)
+    const witnessesToInclude = tx.witnesses.slice(0, startSecpIndex)
     await signSecp(secpWitnesses, witnessesToInclude)
     logger.info('setting witnesses')
     logger.info('witnesses before signing:', tx.witnesses)
