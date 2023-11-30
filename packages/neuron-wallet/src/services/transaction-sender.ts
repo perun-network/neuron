@@ -136,27 +136,13 @@ export default class TransactionSender {
     }
     logger.info('TX INPUTS', tx.inputs)
 
-    // Only one multi sign input now.
-    const isMultisig =
-      tx.inputs.length === 1 && tx.inputs[0].lock!.args.length === TransactionSender.MULTI_SIGN_ARGS_LENGTH
-
     logger.info("retrieving addresses' private keys")
     const addressInfos = await this.getAddressInfos(walletID)
-    const multiSignBlake160s = isMultisig
-      ? addressInfos.map(i => {
-          return {
-            multiSignBlake160: Multisig.hash([i.blake160]),
-            path: i.path,
-          }
-        })
-      : []
     const paths = addressInfos.map(info => info.path)
     const pathAndPrivateKeys = this.getPrivateKeys(wallet, paths, password)
     const findPrivateKey = (args: string) => {
       let path: string | undefined
-      if (args.length === TransactionSender.MULTI_SIGN_ARGS_LENGTH) {
-        path = multiSignBlake160s.find(i => args.slice(0, 42) === i.multiSignBlake160)!.path
-      } else if (args.length === 42) {
+      if (args.length === 42) {
         path = addressInfos.find(i => i.blake160 === args)!.path
       } else {
         const addressInfo = AssetAccountInfo.findSignPathForCheque(addressInfos, args)
@@ -170,92 +156,96 @@ export default class TransactionSender {
       return pathAndPrivateKey.privateKey
     }
 
+    const secpWitnesses = []
+    let startSecpIndex = 0
     logger.info('preparing witness signing entries')
-    const witnessSigningEntries: SignInfo[] = tx.inputs
-      .slice(0, skipLastInputs ? -1 : tx.inputs.length)
-      .map((input: Input, index: number) => {
-        const lockArgs: string = input.lock!.args!
-        const wit: WitnessArgs | string = tx.witnesses[index]
-        const witnessArgs: WitnessArgs = wit instanceof WitnessArgs ? wit : WitnessArgs.generateEmpty()
-        return {
-          // TODO: fill in required DAO's type witness here
-          witnessArgs,
-          lockHash: input.lockHash!,
-          witness: '',
-          lockArgs,
-        }
-      })
-
-    logger.info('accumulating lock hashes')
-    const lockHashes = new Set(witnessSigningEntries.map(w => w.lockHash))
-
-    for (const lockHash of lockHashes) {
-      logger.info(`processing lock hash: ${lockHash}`)
-      const witnessesArgs = witnessSigningEntries.filter(w => w.lockHash === lockHash)
-
-      logger.info(`finding private key for args: ${witnessesArgs[0].lockArgs}`)
-      if (witnessesArgs[0].lockArgs === '0x') {
-        logger.info("CONTINUING: can't find private key for args")
-        // TODO: Hack so we can reuse the default signing function.
+    for (let o = 0; o < tx.inputs.length; o++) {
+      const input = tx.inputs[o]
+      if (input.type) {
+        // We know this has to be our channel cell so we skip it.
+        logger.info("skipping input with type script, it's our channel cell")
         continue
       }
-      const privateKey = findPrivateKey(witnessesArgs[0].lockArgs)
-
-      // A 65-byte empty signature used as placeholder
-      witnessesArgs[0].witnessArgs.setEmptyLock()
-
-      logger.info(`serializing witnesses`)
-      const serializedWitnesses: (WitnessArgs | string)[] = witnessesArgs.map((value: SignInfo, index: number) => {
-        const args = value.witnessArgs
-        if (index === 0) {
-          return args
-        }
-        if (args.lock === undefined && args.inputType === undefined && args.outputType === undefined) {
-          return '0x'
-        }
-        return serializeWitnessArgs(args.toSDK())
+      if (input.lock?.codeHash !== '0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8') {
+        logger.info('skipping input without secp256k1 codehash')
+        continue
+      }
+      if (startSecpIndex === 0) {
+        startSecpIndex = o
+        logger.info('found first input with secp256k1 codehash at', startSecpIndex)
+      }
+      const lockArgs: string = input.lock!.args!
+      const wit: WitnessArgs | string = tx.witnesses[o]
+      const witnessArgs: WitnessArgs = wit instanceof WitnessArgs ? wit : WitnessArgs.generateEmpty()
+      secpWitnesses.push({
+        // TODO: fill in required DAO's type witness here
+        witnessArgs,
+        lockHash: input.lockHash!,
+        witness: '',
+        lockArgs,
       })
-      let signed: (string | CKBComponents.WitnessArgs | WitnessArgs)[] = []
+    }
 
-      if (isMultisig) {
-        const blake160 = addressInfos.find(
-          i => witnessesArgs[0].lockArgs.slice(0, 42) === Multisig.hash([i.blake160])
-        )!.blake160
-        const serializedMultisig: string = Multisig.serialize([blake160])
-        signed = await TransactionSender.signSingleMultiSignScript(
-          privateKey,
-          serializedWitnesses,
-          txHash,
-          serializedMultisig,
-          wallet
-        )
-        const wit = signed[0] as WitnessArgs
-        wit.lock = serializedMultisig + wit.lock!.slice(2)
-        signed[0] = serializeWitnessArgs(wit.toSDK())
-      } else {
+    const signSecp = async (witnessSigningEntries: SignInfo[], witnessesToInclude: any[]) => {
+      logger.info('accumulating lock hashes')
+      const lockHashes = new Set(witnessSigningEntries.map(w => w.lockHash))
+
+      for (const lockHash of lockHashes) {
+        logger.info(`processing lock hash: ${lockHash}`)
+        const witnessesArgs = witnessSigningEntries.filter(w => w.lockHash === lockHash)
+
+        logger.info(`finding private key for args: ${witnessesArgs[0].lockArgs}`)
+        const privateKey = findPrivateKey(witnessesArgs[0].lockArgs)
+
+        // A 65-byte empty signature used as placeholder
+        witnessesArgs[0].witnessArgs.setEmptyLock()
+
+        logger.info(`serializing witnesses`)
+        const serializedWitnesses: (WitnessArgs | string)[] = witnessesArgs.map((value: SignInfo, index: number) => {
+          const args = value.witnessArgs
+          if (index === 0) {
+            return args
+          }
+          if (args.lock === undefined && args.inputType === undefined && args.outputType === undefined) {
+            return '0x'
+          }
+          return serializeWitnessArgs(args.toSDK())
+        })
+        let signed: (string | CKBComponents.WitnessArgs | WitnessArgs)[] = []
+
+        logger.info('witnesses to include', witnessesToInclude)
+        let ws = serializedWitnesses.map(wit => {
+          if (typeof wit === 'string') {
+            return wit
+          }
+          return wit.toSDK()
+        })
+        // Prepend the witnesses to include.
+        if (witnessesToInclude.length > 0) {
+          ws = [...witnessesToInclude, ...ws]
+        }
         logger.info('signing witnesses')
         signed = signWitnesses({
           privateKey,
           transactionHash: txHash,
-          witnesses: serializedWitnesses.map(wit => {
-            if (typeof wit === 'string') {
-              return wit
-            }
-            return wit.toSDK()
-          }),
+          witnesses: ws,
         })
-      }
 
-      for (let i = 0; i < witnessesArgs.length; ++i) {
-        witnessesArgs[i].witness = signed[i] as string
+        for (let i = 0; i < witnessesArgs.length; ++i) {
+          witnessesArgs[i].witness = signed[i] as string
+        }
       }
     }
 
+    const witnessesToInclude = tx.witnesses.slice(0, startSecpIndex + 1)
+    await signSecp(secpWitnesses, witnessesToInclude)
     logger.info('setting witnesses')
     logger.info('witnesses before signing:', tx.witnesses)
-    tx.witnesses = witnessSigningEntries.map(w => w.witness)
-    tx.hash = txHash
+    if (witnessesToInclude.length > 0) {
+      tx.witnesses = [...witnessesToInclude, ...secpWitnesses.map(m => m.witness)]
+    }
     logger.info('witnesses after signing:', tx.witnesses)
+    tx.hash = txHash
     return tx
   }
 
