@@ -412,10 +412,12 @@ const Perun = () => {
             identifier: CKBComponents.Script
             transaction: CKBComponents.Transaction
           }
+          const addr = scriptToAddress(identifier, false)
+          console.log('sign transaction identifier', addr)
           return (
             <>
               <div>With address:</div>
-              <div>{JSON.stringify(scriptToAddress(identifier, false))}</div>
+              <div>{JSON.stringify(addr)}</div>
               <div>Transaction:</div>
               <div>{JSON.stringify(transaction)}</div>
             </>
