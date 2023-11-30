@@ -192,11 +192,17 @@ export default class TransactionSender {
     for (const lockHash of lockHashes) {
       logger.info(`processing lock hash: ${lockHash}`)
       const witnessesArgs = witnessSigningEntries.filter(w => w.lockHash === lockHash)
-      // A 65-byte empty signature used as placeholder
-      witnessesArgs[0].witnessArgs.setEmptyLock()
 
       logger.info(`finding private key for args: ${witnessesArgs[0].lockArgs}`)
+      if (witnessesArgs[0].lockArgs === '0x') {
+        logger.info("CONTINUING: can't find private key for args")
+        // TODO: Hack so we can reuse the default signing function.
+        continue
+      }
       const privateKey = findPrivateKey(witnessesArgs[0].lockArgs)
+
+      // A 65-byte empty signature used as placeholder
+      witnessesArgs[0].witnessArgs.setEmptyLock()
 
       logger.info(`serializing witnesses`)
       const serializedWitnesses: (WitnessArgs | string)[] = witnessesArgs.map((value: SignInfo, index: number) => {
@@ -246,9 +252,10 @@ export default class TransactionSender {
     }
 
     logger.info('setting witnesses')
+    logger.info('witnesses before signing:', tx.witnesses)
     tx.witnesses = witnessSigningEntries.map(w => w.witness)
     tx.hash = txHash
-
+    logger.info('witnesses after signing:', tx.witnesses)
     return tx
   }
 
