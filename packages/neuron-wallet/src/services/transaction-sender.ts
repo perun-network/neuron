@@ -128,6 +128,7 @@ export default class TransactionSender {
     context?: RPC.RawTransaction[]
   ) {
     logger.info(`trying to sign transaction with wallet ${walletID}`)
+    logger.info(`signing tx: ${transaction}`)
     const wallet = this.walletService.get(walletID)
     const tx = Transaction.fromObject(transaction)
     logger.info('computing tx hash')
@@ -223,6 +224,7 @@ export default class TransactionSender {
       const privateKey = findPrivateKey(witnessesArgs[0].lockArgs)
 
       if (!privateKey) {
+        logger.info(`no private key found for args: ${witnessesArgs[0].lockArgs}`)
         metadata.locks.skipped.add(lockHash)
         witnessSigningEntries.forEach((entry, idx) => {
           if (entry.lockHash === lockHash) {
