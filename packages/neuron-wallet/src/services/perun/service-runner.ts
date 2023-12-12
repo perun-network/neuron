@@ -15,7 +15,7 @@ import CellsService from '../../services/cells'
 import OutPoint from '../../models/chain/out-point'
 import RpcService from '../../services/rpc-service'
 import { TransactionsService } from '../tx'
-import NodeService from '../node'
+import NetworksService from '../networks'
 
 // Architecture overview:
 //
@@ -257,7 +257,8 @@ export class PerunServiceRunner {
       let sdkTx = JSON.parse(req.transaction as any, snakeCaseToCamelCase)
       // Fetch live cells from txs input-outpoints.
       let resolvedInputs = []
-      const rpcService = new RpcService(NodeService.getInstance().nodeUrl)
+      const network = NetworksService.getInstance().getCurrent()
+      const rpcService = new RpcService(network.remote, network.type)
       for (const [idx, input] of sdkTx.inputs.entries()) {
         let typedInput = input as { previousOutput: { txHash: string; index: string }; since: string }
         logger.info('Fetching live cell', input.previousOutput)
