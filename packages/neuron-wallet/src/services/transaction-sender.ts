@@ -127,10 +127,12 @@ export default class TransactionSender {
     skipLastInput: boolean = true,
     context?: RPC.RawTransaction[]
   ) {
+    logger.info('json tx:', JSON.stringify(transaction))
     logger.info(`trying to sign transaction with wallet ${walletID}`)
-    logger.info(`signing tx: ${transaction}`)
     const wallet = this.walletService.get(walletID)
     const tx = Transaction.fromObject(transaction)
+    logger.info('tx to sign:', tx)
+
     logger.info('computing tx hash')
     const txHash: string = tx.computeHash()
 
@@ -172,6 +174,7 @@ export default class TransactionSender {
     const paths = addressInfos.map(info => info.path)
     const pathAndPrivateKeys = this.getPrivateKeys(wallet, paths, password)
     const findPrivateKey = (args: string) => {
+      logger.log('inside findPrivateKey, args: ', args)
       let path: string | undefined
       if (args.length === TransactionSender.MULTI_SIGN_ARGS_LENGTH) {
         path = multiSignBlake160s.find(i => args.slice(0, 42) === i.multiSignBlake160)?.path
@@ -186,7 +189,7 @@ export default class TransactionSender {
           logger.error(`Failed to find args: ${args}`)
         }
       }
-
+      logger.log('inside findPrivateKey, path: ', path)
       return pathAndPrivateKeys.find(p => p.path === path)?.privateKey
     }
 
