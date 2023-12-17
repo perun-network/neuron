@@ -4,7 +4,7 @@ import PerunService from '../../services/perun/service'
 import logger from '../../utils/logger'
 import { ResponseCode } from '../../utils/const'
 import { SimpleChannelServiceClient } from '@polycrypt/perun-wallet-wrapper/services'
-import { AddressEncoder } from '@polycrypt/perun-wallet-wrapper/translator'
+import { AddressEncoder, channelIdToString } from '@polycrypt/perun-wallet-wrapper/translator'
 import { mkSimpleChannelServiceClient } from '@polycrypt/perun-wallet-wrapper/client'
 import { bytes } from '@ckb-lumos/codec'
 import { Allocation, Balances } from '@polycrypt/perun-wallet-wrapper/wire'
@@ -90,18 +90,17 @@ export default class PerunController {
         channelId: undefined,
       }
     })
-
     if (res.rejected) {
       return {
         status: ResponseCode.Fail,
         message: res.rejected.reason,
       }
     }
-
+    const channelId = channelIdToString(new Uint8Array(res.channelId!))
     return {
       status: ResponseCode.Success,
       result: {
-        channelId: res.channelId!,
+        channelId: channelId,
         alloc: alloc,
       },
     }

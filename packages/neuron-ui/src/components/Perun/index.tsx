@@ -332,7 +332,8 @@ const Perun = () => {
     const appId = new Uint8Array(32)
     const appData = new Uint8Array()
     const isFinal = false
-    channels.set(channelIdToString(channelId!), new ChannelState(channelId!, version, appId, alloc, appData, isFinal))
+    console.log('channelId', channelId)
+    channels.set(channelId, new ChannelState(channelIdFromString(channelId), version, appId, alloc, appData, isFinal))
   }
 
   const handleUpdateChannel = async (channelId: Uint8Array, amount: bigint) => {
