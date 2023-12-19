@@ -81,7 +81,7 @@ declare namespace Controller {
       challengeDuration: number
     }
     interface UpdateChannelParams {
-      channelId: Uint8Array
+      channelId: string
       index: number
       amount: bigint
     }

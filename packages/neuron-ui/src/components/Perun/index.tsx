@@ -88,6 +88,7 @@ const Perun = () => {
   }
 
   const handleRejected = (reason: React.SetStateAction<string>) => {
+    console.log("HANDLE REJECTED REASON: ", reason)
     setRejectionReason(reason)
     setShowRejectionModal(true)
   }
@@ -303,7 +304,7 @@ const Perun = () => {
     const myAddress = wallet.addresses[0].address
     const res = await getCurrentWalletAccountExtendedPubKey({ type: 0, index: 0 })
     if (!isSuccessResponse(res)) {
-      handleRejected(res.message as string)
+      handleRejected((res.message as any).content)
       return
     }
     const myPubKey = res.result
@@ -337,14 +338,16 @@ const Perun = () => {
   }
 
   const handleUpdateChannel = async (channelId: Uint8Array, amount: bigint) => {
+    console.log("HANDLE UPDATE CHANNEL")
     const res = await perunServiceAction({
       type: 'update',
       payload: {
-        channelId: channelId,
+        channelId: channelIdToString(channelId),
         index: 0,
         amount: amount,
       },
     })
+    console.log("HANDLE UPDATE CHANNEL RES: ", res)
     if (!isSuccessResponse(res)) {
       handleRejected(res.message as string)
       return
@@ -556,7 +559,8 @@ const Perun = () => {
                   className={`${styles['info-button']}`}
                   variant="light"
                   size="sm"
-                  onClick={() => setShowState(channels.get(channelIdToString(channel[1].id)))}
+                  onClick={() => {console.log("Before setShowState: ", channels.get(channelIdToString(channel[1].id)));
+                  setShowState(channels.get(channelIdToString(channel[1].id)))}}
                 >
                   <BiPlus />
                 </Button>
@@ -566,6 +570,7 @@ const Perun = () => {
                   className={`${styles['channel-button']} ${styles['channel-update-button']}`}
                   type="button"
                   onClick={() => {
+                    console.log("Before setChannelID: ", channel[1].id);
                     setChannelID(channel[1].id)
                     setUpdateChannelDialog(true)
                   }}
@@ -625,7 +630,8 @@ const Perun = () => {
               className={styles.updateButton}
               onClick={() => {
                 setUpdateChannelDialog(false)
-                handleUpdateChannel(channelID, BigInt(updateAmount! * 1e18))
+                console.log("Before handleUpdateChannel: ", channelID, updateAmount)
+                handleUpdateChannel(channelID, BigInt(updateAmount! * 1e8))
                 setChannelID(undefined)
               }}
             >
@@ -647,7 +653,8 @@ const Perun = () => {
               <BiX />
             </Button>
             <p>{t(`perun.state`)}:</p>
-            <p>{JSON.stringify(showState)}</p>
+            <p>{() => {console.log(showState);
+              return JSON.stringify(showState)}}</p>
           </div>
         )}
       </div>

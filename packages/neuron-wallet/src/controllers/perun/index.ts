@@ -4,7 +4,7 @@ import PerunService from '../../services/perun/service'
 import logger from '../../utils/logger'
 import { ResponseCode } from '../../utils/const'
 import { SimpleChannelServiceClient } from '@polycrypt/perun-wallet-wrapper/services'
-import { AddressEncoder, channelIdToString } from '@polycrypt/perun-wallet-wrapper/translator'
+import { AddressEncoder, channelIdFromString, channelIdToString } from '@polycrypt/perun-wallet-wrapper/translator'
 import { mkSimpleChannelServiceClient } from '@polycrypt/perun-wallet-wrapper/client'
 import { bytes } from '@ckb-lumos/codec'
 import { Allocation, Balances } from '@polycrypt/perun-wallet-wrapper/wire'
@@ -19,13 +19,16 @@ const defaultAddressEncoder: AddressEncoder = (add: Uint8Array | string) => {
 export default class PerunController {
   static emiter = new EventEmitter()
   private static instance: PerunController
+  private static serviceClient: SimpleChannelServiceClient
 
   public static getInstance() {
     if (!PerunController.instance) {
       PerunController.instance = new PerunController()
+      PerunController.serviceClient = PerunController.mkClient()
     }
     return PerunController.instance
   }
+
 
   public async start() {
     return PerunService.getInstance().start()
@@ -64,13 +67,12 @@ export default class PerunController {
     }
   }
   // Create a new client for each call, in case the connection break for some reason.
-  private mkClient(): SimpleChannelServiceClient {
+  private static mkClient(): SimpleChannelServiceClient {
     const rpcEndpoint = 'http://localhost:42025'
     return mkSimpleChannelServiceClient(defaultAddressEncoder, rpcEndpoint)
   }
 
   async openChannel(params: Controller.Params.OpenChannelParams): Promise<Controller.Response> {
-    const serviceClient = this.mkClient()
 
     const alloc = Allocation.create({
       assets: [new Uint8Array(32)],
@@ -82,7 +84,7 @@ export default class PerunController {
         ],
       }),
     })
-    const res = await serviceClient.openChannel(params.me, params.peer, alloc, params.challengeDuration).catch(e => {
+    const res = await PerunController.serviceClient.openChannel(params.me, params.peer, alloc, params.challengeDuration).catch(e => {
       return {
         rejected: {
           reason: e.message,
@@ -97,6 +99,8 @@ export default class PerunController {
       }
     }
     const channelId = channelIdToString(new Uint8Array(res.channelId!))
+    console.log('Controler Buffer channelId', res.channelId!)
+    console.log('Controler channelID', channelId)
     return {
       status: ResponseCode.Success,
       result: {
@@ -107,8 +111,7 @@ export default class PerunController {
   }
 
   async updateChannel(params: Controller.Params.UpdateChannelParams): Promise<Controller.Response> {
-    const serviceClient = this.mkClient()
-    const res = await serviceClient.updateChannel(params.channelId, params.index, params.amount).catch(e => {
+    const res = await PerunController.serviceClient.updateChannel(channelIdFromString(params.channelId), params.index, params.amount).catch(e => {
       return {
         rejected: {
           reason: e.message,
@@ -135,8 +138,7 @@ export default class PerunController {
   }
 
   async closeChannel(params: Controller.Params.CloseChannelParams): Promise<Controller.Response> {
-    const serviceClient = this.mkClient()
-    const res = await serviceClient.closeChannel(params.channelId)
+    const res = await PerunController.serviceClient.closeChannel(params.channelId)
 
     if (res.rejected) {
       return {
