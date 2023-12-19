@@ -29,7 +29,6 @@ export default class PerunController {
     return PerunController.instance
   }
 
-
   public async start() {
     return PerunService.getInstance().start()
   }
@@ -62,10 +61,13 @@ export default class PerunController {
         return this.updateChannel(params.payload as Controller.Params.UpdateChannelParams)
       case 'close':
         return this.closeChannel(params.payload as Controller.Params.CloseChannelParams)
+      case 'get':
+        return this.getChannels(params.payload as Controller.Params.GetChannelsParams)
       default:
         return Promise.reject(new Error('Invalid perun service action type'))
     }
   }
+
   // Create a new client for each call, in case the connection break for some reason.
   private static mkClient(): SimpleChannelServiceClient {
     const rpcEndpoint = 'http://localhost:42025'
@@ -73,7 +75,6 @@ export default class PerunController {
   }
 
   async openChannel(params: Controller.Params.OpenChannelParams): Promise<Controller.Response> {
-
     const alloc = Allocation.create({
       assets: [new Uint8Array(32)],
       balances: Balances.create({
@@ -84,14 +85,16 @@ export default class PerunController {
         ],
       }),
     })
-    const res = await PerunController.serviceClient.openChannel(params.me, params.peer, alloc, params.challengeDuration).catch(e => {
-      return {
-        rejected: {
-          reason: e.message,
-        },
-        channelId: undefined,
-      }
-    })
+    const res = await PerunController.serviceClient
+      .openChannel(params.me, params.peer, alloc, params.challengeDuration)
+      .catch(e => {
+        return {
+          rejected: {
+            reason: e.message,
+          },
+          channelId: undefined,
+        }
+      })
     if (res.rejected) {
       return {
         status: ResponseCode.Fail,
@@ -111,14 +114,16 @@ export default class PerunController {
   }
 
   async updateChannel(params: Controller.Params.UpdateChannelParams): Promise<Controller.Response> {
-    const res = await PerunController.serviceClient.updateChannel(channelIdFromString(params.channelId), params.index, params.amount).catch(e => {
-      return {
-        rejected: {
-          reason: e.message,
-        },
-        update: undefined,
-      }
-    })
+    const res = await PerunController.serviceClient
+      .updateChannel(channelIdFromString(params.channelId), params.index, params.amount)
+      .catch(e => {
+        return {
+          rejected: {
+            reason: e.message,
+          },
+          update: undefined,
+        }
+      })
 
     if (res.rejected) {
       return {
@@ -151,6 +156,24 @@ export default class PerunController {
       status: ResponseCode.Success,
       result: {
         channelId: res.close!.channelId!,
+      },
+    }
+  }
+
+  async getChannels(params: Controller.Params.GetChannelsParams): Promise<Controller.Response> {
+    const res = await PerunController.serviceClient.getChannels(params.requester)
+
+    if (res.rejected) {
+      return {
+        status: ResponseCode.Fail,
+        message: res.rejected.reason,
+      }
+    }
+
+    return {
+      status: ResponseCode.Success,
+      result: {
+        channels: res.channels,
       },
     }
   }

@@ -11,13 +11,13 @@ import PageContainer from 'components/PageContainer'
 import { Form, Container, Button, Modal } from 'react-bootstrap'
 import { BiPlus, BiX } from 'react-icons/bi'
 import {
+  ChannelState,
   SerializeOffChainParticipant,
   SerializeSEC1EncodedPubKey,
 } from '@polycrypt/perun-wallet-wrapper/ckb/serialization'
 import { channelIdToString, channelIdFromString } from '@polycrypt/perun-wallet-wrapper/translator'
 import * as wire from '@polycrypt/perun-wallet-wrapper/wire'
 
-import { ChannelState } from './types'
 import styles from './perun.module.scss'
 import { ControllerResponse } from 'services/remote/remoteApiWrapper'
 import {
@@ -33,6 +33,7 @@ import { addressToScript, bytesToHex, scriptToAddress } from '@nervosnetwork/ckb
 import { ErrorCode, errorFormatter, isSuccessResponse } from 'utils'
 import { showErrorMessage } from 'services/remote'
 import { PasswordDialog } from 'components/SignAndVerify'
+import { State } from '@polycrypt/perun-wallet-wrapper/wire'
 
 const Perun = () => {
   const { wallet } = useGlobalState()
@@ -42,12 +43,12 @@ const Perun = () => {
   const [peerAddress, setPeerAddress] = useState('')
   const [challengeDuration, setChallengeDuration] = useState<number>()
   const [validInputs, setValidInputs] = useState(false)
-  const [channels] = useState(new Map<string, ChannelState>())
+  const [channels] = useState(new Map<string, State>())
   const [showRejectionModal, setShowRejectionModal] = useState(false)
   const [rejectionReason, setRejectionReason] = useState('')
   const [updateChannelDialog, setUpdateChannelDialog] = useState(false)
   const [channelID, setChannelID] = useState<Uint8Array>()
-  const [showState, setShowState] = useState<ChannelState>()
+  const [showState, setShowState] = useState<State>()
   const [showInfo, setShowInfo] = useState(false)
   const [perunState, setPerunState] = useState<Subject.PerunState>({ type: 'SignMessage' })
 
@@ -88,7 +89,7 @@ const Perun = () => {
   }
 
   const handleRejected = (reason: React.SetStateAction<string>) => {
-    console.log("HANDLE REJECTED REASON: ", reason)
+    console.log('HANDLE REJECTED REASON: ', reason)
     setRejectionReason(reason)
     setShowRejectionModal(true)
   }
@@ -334,11 +335,21 @@ const Perun = () => {
     const appData = new Uint8Array()
     const isFinal = false
     console.log('channelId', channelId)
-    channels.set(channelId, new ChannelState(channelIdFromString(channelId), version, appId, alloc, appData, isFinal))
+    channels.set(
+      channelId,
+      State.create({
+        id: channelIdFromString(channelId),
+        version: version,
+        app: appId,
+        allocation: alloc,
+        data: appData,
+        isFinal: isFinal,
+      })
+    )
   }
 
   const handleUpdateChannel = async (channelId: Uint8Array, amount: bigint) => {
-    console.log("HANDLE UPDATE CHANNEL")
+    console.log('HANDLE UPDATE CHANNEL')
     const res = await perunServiceAction({
       type: 'update',
       payload: {
@@ -347,7 +358,7 @@ const Perun = () => {
         amount: amount,
       },
     })
-    console.log("HANDLE UPDATE CHANNEL RES: ", res)
+    console.log('HANDLE UPDATE CHANNEL RES: ', res)
     if (!isSuccessResponse(res)) {
       handleRejected(res.message as string)
       return
@@ -379,6 +390,50 @@ const Perun = () => {
     }
     channels.delete(channelIdToString(res.result.channelId))
   }
+
+  const getChannels = async () => {
+    console.log("Getting channels")
+    const myAddress = wallet.addresses[0].address
+    const res = await getCurrentWalletAccountExtendedPubKey({ type: 0, index: 0 })
+    if (!isSuccessResponse(res)) {
+      handleRejected((res.message as any).content)
+      return
+    }
+    const myPubKey = res.result
+    const actionRes = await perunServiceAction({
+      type: 'get',
+      payload: {
+        requester: meAsParticipant(myAddress, myPubKey),
+      },
+    })
+    if (!isSuccessResponse(actionRes)) {
+      return
+    }
+    const channelBytes = actionRes.result.channels as Uint8Array
+    if (channelBytes == new Uint8Array()) {
+      console.log("empty result")
+      return
+    }
+    console.log("Channel bytes received: ", channelBytes)
+    const channelView = new DataView(channelBytes.buffer)
+    const channelState = new ChannelState({ reader: { view: channelView } })
+    const state = State.create({
+      id: new Uint8Array(channelState.getChannelId().raw()),
+      version: new Number(channelState.getVersion().raw()) as number,
+      app: new Uint8Array(),
+      allocation: wire.Allocation.create({
+        assets: undefined,
+        balances: undefined,
+        locked: undefined,
+      }),
+      data: undefined,
+      isFinal: Boolean(channelState.getIsFinal().value()) as boolean
+    })
+
+    channels.set(channelIdToString(state.id), state)
+  }
+  const intervalId = setInterval(getChannels, 5000);
+  console.log("IntervalID", intervalId)
 
   const rejectPerunRequest = async (type: 'SignMessage' | 'SignTransaction' | 'UpdateNotification', reason: string) => {
     await respondPerunRequest({
@@ -559,8 +614,10 @@ const Perun = () => {
                   className={`${styles['info-button']}`}
                   variant="light"
                   size="sm"
-                  onClick={() => {console.log("Before setShowState: ", channels.get(channelIdToString(channel[1].id)));
-                  setShowState(channels.get(channelIdToString(channel[1].id)))}}
+                  onClick={() => {
+                    console.log('Before setShowState: ', channels.get(channelIdToString(channel[1].id)))
+                    setShowState(channels.get(channelIdToString(channel[1].id)))
+                  }}
                 >
                   <BiPlus />
                 </Button>
@@ -570,7 +627,7 @@ const Perun = () => {
                   className={`${styles['channel-button']} ${styles['channel-update-button']}`}
                   type="button"
                   onClick={() => {
-                    console.log("Before setChannelID: ", channel[1].id);
+                    console.log('Before setChannelID: ', channel[1].id)
                     setChannelID(channel[1].id)
                     setUpdateChannelDialog(true)
                   }}
@@ -630,7 +687,7 @@ const Perun = () => {
               className={styles.updateButton}
               onClick={() => {
                 setUpdateChannelDialog(false)
-                console.log("Before handleUpdateChannel: ", channelID, updateAmount)
+                console.log('Before handleUpdateChannel: ', channelID, updateAmount)
                 handleUpdateChannel(channelID, BigInt(updateAmount! * 1e8))
                 setChannelID(undefined)
               }}
@@ -653,8 +710,12 @@ const Perun = () => {
               <BiX />
             </Button>
             <p>{t(`perun.state`)}:</p>
-            <p>{() => {console.log(showState);
-              return JSON.stringify(showState)}}</p>
+            <p>
+              {() => {
+                console.log(showState)
+                return JSON.stringify(showState)
+              }}
+            </p>
           </div>
         )}
       </div>

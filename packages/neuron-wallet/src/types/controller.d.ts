@@ -88,9 +88,12 @@ declare namespace Controller {
     interface CloseChannelParams {
       channelId: Uint8Array
     }
+    interface GetChannelsParams {
+      requester: Uint8Array
+    }
     interface PerunServiceActionParams {
-      type: 'open' | 'update' | 'close'
-      payload: OpenChannelParams | UpdateChannelParams | CloseChannelParams
+      type: 'open' | 'update' | 'close' | 'get'
+      payload: OpenChannelParams | UpdateChannelParams | CloseChannelParams | GetChannelParams
     }
 
     interface RespondPerunRequestParams {
