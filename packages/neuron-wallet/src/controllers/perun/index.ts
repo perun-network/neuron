@@ -173,7 +173,7 @@ export default class PerunController {
     return {
       status: ResponseCode.Success,
       result: {
-        channels: res.channels,
+        channels: res.state,
       },
     }
   }

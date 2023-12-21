@@ -320,7 +320,8 @@
   .channel-info {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
+    overflow-x: auto;
   }
 
   .info-button {
@@ -328,14 +329,6 @@
     background: transparent;
     border: none;
     cursor: pointer;
-  }
-
-  .channel-id {
-    font-weight: bold;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    max-width: 50%;
   }
 
   .channel-buttons {
