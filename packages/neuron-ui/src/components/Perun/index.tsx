@@ -36,6 +36,17 @@ import { PasswordDialog } from 'components/SignAndVerify'
 import { State } from '@polycrypt/perun-wallet-wrapper/wire'
 import styles from './perun.module.scss'
 
+function bigintFromBEBytes(bytes: Uint8Array): bigint {
+  let result = BigInt(0);
+
+  for (let i = 0; i < bytes.length; i++) {
+    result = (result << BigInt(8)) + BigInt(bytes[i]);
+  }
+
+  return result;
+}
+
+
 const Perun = () => {
   const { wallet } = useGlobalState()
   const [t, _] = useTranslation()
@@ -322,42 +333,6 @@ const Perun = () => {
       showErrorMessage('Error', errorFormatter(actionRes.message, t))
       return
     }
-
-    const { channelId, alloc } = actionRes.result
-    const version = 0
-    const appId = new Uint8Array(32)
-    const appData = new Uint8Array()
-    const isFinal = false
-    console.log('channelId', channelId)
-    channels.set(
-      channelId,
-      State.create({
-        id: channelIdFromString(channelId),
-        version,
-        app: appId,
-        allocation: alloc,
-        data: appData,
-        isFinal,
-      })
-    )
-    // const cid = Uint8Array.from({ length: 64 }, () => Math.floor(Math.random() * 256))
-    // channels.set(
-    //   cid.toString(),
-    //   State.create({
-    //     id: cid,
-    //     version: 0,
-    //     app: Uint8Array.from({ length: 64 }, () => Math.floor(Math.random() * 256)),
-    //     allocation: wire.Allocation.create({
-    //       assets: [
-    //         Uint8Array.from({ length: 64 }, () => Math.floor(Math.random() * 256)),
-    //         Uint8Array.from({ length: 64 }, () => Math.floor(Math.random() * 256)),
-    //       ],
-    //       balances: undefined,
-    //     }),
-    //     data: Uint8Array.from({ length: 64 }, () => Math.floor(Math.random() * 256)),
-    //     isFinal: false,
-    //   })
-    // )
   }
 
   const handleUpdateChannel = async (channelId: Uint8Array, swapAmount: bigint) => {
@@ -421,11 +396,41 @@ const Perun = () => {
     if (!isSuccessResponse(actionRes)) {
       return
     }
+    if (!actionRes.result) {
+      return
+    }
+    console.log('GET CHANNELS result: ', JSON.stringify(actionRes))
+    const id = actionRes.result.channels.id.data
+    const version = actionRes.result.channels.version
+    const app = actionRes.result.channels.app
+    const alloc = wire.Allocation.create({
+      assets: [new Uint8Array(32)],
+      balances: wire.Balances.create({
+        balances: [
+          {
+            balance: [actionRes.result.channels.allocation.balances.balances[0].balance[0].data,
+            actionRes.result.channels.allocation.balances.balances[0].balance[1].data
+          ],
+          },
+        ],
+      }),
+      locked: [],
+    })
+    const data = actionRes.result.channels.data
+    const isFinal = actionRes.result.channels.isFinal
 
-    channels.set(channelIdToString(actionRes.result.state.id), actionRes.result.state)
+    const state = wire.State.create({
+      id,
+      version,
+      app: app,
+      allocation: alloc,
+      data,
+      isFinal,
+    })
+    
+    channels.set(channelIdToString(id), state)
   }
-  const intervalId = setInterval(getChannels, 5000)
-  console.log('IntervalID', intervalId)
+  setInterval(getChannels, 50000)
 
   const rejectPerunRequest = async (type: 'SignMessage' | 'SignTransaction' | 'UpdateNotification', reason: string) => {
     await respondPerunRequest({
@@ -617,7 +622,7 @@ const Perun = () => {
                 <p>{`Channel ID: ${channelIdToString(channel[1].id)}`}</p>
                 <p>{`State: `}</p>
                 <p>{`Version: ${channel[1].version}`}</p>
-                <p>{`Balances: ${channel[1].allocation?.balances}`}</p>
+                <p>{`Balances: A: ${bigintFromBEBytes(channel[1].allocation?.balances?.balances[0].balance[0]!)}, B: ${bigintFromBEBytes(channel[1].allocation?.balances?.balances[0].balance[1]!)}`}</p>
                 <p>{`IsFinal: ${channel[1].isFinal}`}</p>
               </div>
               <div className={styles['channel-buttons']}>
