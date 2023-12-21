@@ -399,7 +399,7 @@ const Perun = () => {
     if (!actionRes.result) {
       return
     }
-    console.log('GET CHANNELS result: ', JSON.stringify(actionRes))
+    //console.log('GET CHANNELS result: ', JSON.stringify(actionRes))
     const id = actionRes.result.channels.id.data
     const version = actionRes.result.channels.version
     const app = actionRes.result.channels.app
