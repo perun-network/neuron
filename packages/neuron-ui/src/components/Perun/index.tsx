@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
 /* eslint-disable consistent-return */
 /* eslint-disable no-console */
 /* eslint-disable import/no-extraneous-dependencies */
@@ -36,16 +37,17 @@ import { PasswordDialog } from 'components/SignAndVerify'
 import { State } from '@polycrypt/perun-wallet-wrapper/wire'
 import styles from './perun.module.scss'
 
+// eslint-disable-next-line @typescript-eslint/no-shadow
 function bigintFromBEBytes(bytes: Uint8Array): bigint {
-  let result = BigInt(0);
+  let result = BigInt(0)
 
   for (let i = 0; i < bytes.length; i++) {
-    result = (result << BigInt(8)) + BigInt(bytes[i]);
+    // eslint-disable-next-line no-bitwise
+    result = (result << BigInt(8)) + BigInt(bytes[i])
   }
 
-  return result;
+  return result
 }
-
 
 const Perun = () => {
   const { wallet } = useGlobalState()
@@ -53,6 +55,7 @@ const Perun = () => {
   const [amount, setAmount] = useState<number>()
   const [updateAmount, setUpdateAmount] = useState<number>()
   const [peerAddress, setPeerAddress] = useState('')
+  const [peerAmount, setPeerAmount] = useState<number>()
   const [challengeDuration, setChallengeDuration] = useState<number>()
   const [validInputs, setValidInputs] = useState(false)
   const [channels] = useState(new Map<string, State>())
@@ -76,6 +79,14 @@ const Perun = () => {
       return
     }
     setAmount(amountNum)
+  }
+
+  const handlePeerAmountChange = (am: string) => {
+    const amountNum = parseFloat(am)
+    if (Number.isNaN(amountNum)) {
+      return
+    }
+    setPeerAmount(amountNum)
   }
 
   const handleUpdateAmountChange = (am: string) => {
@@ -195,6 +206,7 @@ const Perun = () => {
               if (typeof v === 'object' && v !== null) {
                 return camelToSnakeCloner(v, valueModifier)
               }
+              // eslint-disable-next-line @typescript-eslint/no-shadow
               const [_, modVal] = valueModifier('', v)
               return modVal
             })
@@ -318,7 +330,7 @@ const Perun = () => {
     const myPubKey = res.result
     const myBalanceCKB = amount!
     const myBalanceShannon = equalNumPaddedHex(BigInt(myBalanceCKB * 1e8))
-    const peerBalanceCKB = 100
+    const peerBalanceCKB = peerAmount!
     const peerBalanceShannon = equalNumPaddedHex(BigInt(peerBalanceCKB * 1e8))
     console.log('myaddress', myAddress)
     console.log('myPubKey', myPubKey)
@@ -333,7 +345,6 @@ const Perun = () => {
     })
     if (!isSuccessResponse(actionRes)) {
       showErrorMessage('Error', errorFormatter(actionRes.message, t))
-      return
     }
   }
 
@@ -401,30 +412,31 @@ const Perun = () => {
     if (!actionRes.result) {
       return
     }
-    //console.log('GET CHANNELS result: ', JSON.stringify(actionRes))
+    // console.log('GET CHANNELS result: ', JSON.stringify(actionRes))
     const id = actionRes.result.channels.id.data
-    const version = actionRes.result.channels.version
-    const app = actionRes.result.channels.app
+    const { version } = actionRes.result.channels
+    const { app } = actionRes.result.channels
     const alloc = wire.Allocation.create({
       assets: [new Uint8Array(32)],
       balances: wire.Balances.create({
         balances: [
           {
-            balance: [actionRes.result.channels.allocation.balances.balances[0].balance[0].data,
-            actionRes.result.channels.allocation.balances.balances[0].balance[1].data
+            balance: [
+              actionRes.result.channels.allocation.balances.balances[0].balance[0].data,
+              actionRes.result.channels.allocation.balances.balances[0].balance[1].data,
             ],
           },
         ],
       }),
       locked: [],
     })
-    const data = actionRes.result.channels.data
-    const isFinal = actionRes.result.channels.isFinal
+    const { data } = actionRes.result.channels
+    const { isFinal } = actionRes.result.channels
 
     const state = wire.State.create({
       id,
       version,
-      app: app,
+      app,
       allocation: alloc,
       data,
       isFinal,
@@ -482,30 +494,34 @@ const Perun = () => {
           )
         }
         case 'UpdateNotification': {
-          console.log("UpdateNotification request: ", state.request)
+          console.log('UpdateNotification request: ', state.request)
           const ps = state.request.state
           const id = ps.id.data
-          const version = ps.version
+          const { version } = ps
           const alloc = wire.Allocation.create({
             assets: [new Uint8Array(32)],
             balances: wire.Balances.create({
               balances: [
                 {
-                  balance: [ps.allocation.balances.balances[0].balance[0].data,
-                  ps.allocation.balances.balances[0].balance[1].data
+                  balance: [
+                    ps.allocation.balances.balances[0].balance[0].data,
+                    ps.allocation.balances.balances[0].balance[1].data,
                   ],
                 },
               ],
             }),
             locked: [],
           })
-          const isFinal = ps.isFinal
+          const { isFinal } = ps
           return (
-            <><h3>Update Notification</h3>
+            <>
+              <h3>Update Notification</h3>
               <p>{`Channel ID: ${channelIdToString(id)}`}</p>
               <p>{`State: `}</p>
               <p>{`Version: ${version}`}</p>
-              <p>{`Balances: A: ${bigintFromBEBytes(alloc.balances?.balances[0].balance[0]!)}, B: ${bigintFromBEBytes(alloc.balances?.balances[0].balance[1]!)}`}</p>
+              <p>{`Balances: A: ${bigintFromBEBytes(alloc.balances?.balances[0].balance[0]!)}, B: ${bigintFromBEBytes(
+                alloc.balances?.balances[0].balance[1]!
+              )}`}</p>
               <p>{`IsFinal: ${isFinal}`}</p>
             </>
           )
@@ -609,6 +625,16 @@ const Perun = () => {
                     }}
                   />
                 </Form.Group>
+                <Form.Group className={styles.formGroup} controlId="peerAmount">
+                  <Form.Label className={styles.formLabel}>{t(`perun.peer-amount`)} :</Form.Label>
+                  <Form.Control
+                    type="number"
+                    value={peerAmount || ''}
+                    onChange={(event: { currentTarget: { value: string } }) => {
+                      handlePeerAmountChange(event.currentTarget.value)
+                    }}
+                  />
+                </Form.Group>
                 <Form.Group className={styles.formGroup} controlId="challengeDuration">
                   <Form.Label className={styles.formLabel}>{t(`perun.challenge-duration`)} :</Form.Label>
                   <Form.Control
@@ -643,7 +669,11 @@ const Perun = () => {
                 <p>{`Channel ID: ${channelIdToString(channel[1].id)}`}</p>
                 <p>{`State: `}</p>
                 <p>{`Version: ${channel[1].version}`}</p>
-                <p>{`Balances: A: ${bigintFromBEBytes(channel[1].allocation?.balances?.balances[0].balance[0]!)}, B: ${bigintFromBEBytes(channel[1].allocation?.balances?.balances[0].balance[1]!)}`}</p>
+                <p>{`Balances: A: ${
+                  bigintFromBEBytes(channel[1].allocation?.balances?.balances[0].balance[0]!) / BigInt(10e8)
+                }, B: ${
+                  bigintFromBEBytes(channel[1].allocation?.balances?.balances[0].balance[1]!) / BigInt(10e8)
+                }`}</p>
                 <p>{`IsFinal: ${channel[1].isFinal}`}</p>
               </div>
               <div className={styles['channel-buttons']}>

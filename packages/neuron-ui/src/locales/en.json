@@ -754,6 +754,7 @@
       "reject": "Reject",
       "amount": "amount",
       "peer-address": "Peer Address",
+      "peer-amount": "Peer Amount",
       "signing-request": "Signing Request",
       "signing-request-text": "Received a request to sign the following message",
       "challenge-duration": "Challenge duration",
