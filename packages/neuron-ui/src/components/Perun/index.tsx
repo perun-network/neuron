@@ -670,9 +670,9 @@ const Perun = () => {
                 <p>{`State: `}</p>
                 <p>{`Version: ${channel[1].version}`}</p>
                 <p>{`Balances: A: ${
-                  bigintFromBEBytes(channel[1].allocation?.balances?.balances[0].balance[0]!) / BigInt(10e8)
+                  bigintFromBEBytes(channel[1].allocation?.balances?.balances[0].balance[0]!) / BigInt(1e8)
                 }, B: ${
-                  bigintFromBEBytes(channel[1].allocation?.balances?.balances[0].balance[1]!) / BigInt(10e8)
+                  bigintFromBEBytes(channel[1].allocation?.balances?.balances[0].balance[1]!) / BigInt(1e8)
                 }`}</p>
                 <p>{`IsFinal: ${channel[1].isFinal}`}</p>
               </div>
