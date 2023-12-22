@@ -241,6 +241,8 @@ const Perun = () => {
           data: JSON.stringify(compatibleTx),
         },
       })
+      setShowPrompt(false)
+      setShowPasswordDialog(false)
       return res
     }
 
@@ -410,7 +412,7 @@ const Perun = () => {
           {
             balance: [actionRes.result.channels.allocation.balances.balances[0].balance[0].data,
             actionRes.result.channels.allocation.balances.balances[0].balance[1].data
-          ],
+            ],
           },
         ],
       }),
@@ -427,7 +429,7 @@ const Perun = () => {
       data,
       isFinal,
     })
-    
+
     channels.set(channelIdToString(id), state)
   }
   setInterval(getChannels, 50000)
@@ -480,12 +482,31 @@ const Perun = () => {
           )
         }
         case 'UpdateNotification': {
-          const { encodedState } = state.request as { encodedState: Uint8Array }
-          const decodedState = wire.State.decode(encodedState)
+          console.log("UpdateNotification request: ", state.request)
+          const ps = state.request.state
+          const id = ps.id.data
+          const version = ps.version
+          const alloc = wire.Allocation.create({
+            assets: [new Uint8Array(32)],
+            balances: wire.Balances.create({
+              balances: [
+                {
+                  balance: [ps.allocation.balances.balances[0].balance[0].data,
+                  ps.allocation.balances.balances[0].balance[1].data
+                  ],
+                },
+              ],
+            }),
+            locked: [],
+          })
+          const isFinal = ps.isFinal
           return (
-            <>
-              <div>State:</div>
-              <div>{JSON.stringify(decodedState)}</div>
+            <><h3>Update Notification</h3>
+              <p>{`Channel ID: ${channelIdToString(id)}`}</p>
+              <p>{`State: `}</p>
+              <p>{`Version: ${version}`}</p>
+              <p>{`Balances: A: ${bigintFromBEBytes(alloc.balances?.balances[0].balance[0]!)}, B: ${bigintFromBEBytes(alloc.balances?.balances[0].balance[1]!)}`}</p>
+              <p>{`IsFinal: ${isFinal}`}</p>
             </>
           )
         }
@@ -617,7 +638,7 @@ const Perun = () => {
           </div>
           {channels.size === 0 && <div>{t(`perun.no-open`)} </div>}
           {Array.from(channels).map(channel => (
-            <Container className={`${styles['channel-entry']}`}>
+            <Container key={channel[0]} className={`${styles['channel-entry']}`}>
               <div className={`${styles['channel-info']}`}>
                 <p>{`Channel ID: ${channelIdToString(channel[1].id)}`}</p>
                 <p>{`State: `}</p>

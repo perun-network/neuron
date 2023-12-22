@@ -2,7 +2,6 @@ import { bytes } from '@ckb-lumos/codec'
 import { UpdateNotificationRequest, SignTransactionRequest } from '@polycrypt/perun-wallet-wrapper/perun-wallet'
 import { WalletBackend } from '@polycrypt/perun-wallet-wrapper/services'
 import { ValidOpenChannelRequest, ValidSignMessageRequest } from '@polycrypt/perun-wallet-wrapper/verifier'
-import * as wire from '@polycrypt/perun-wallet-wrapper/wire'
 
 export type IPCMessageRequest =
   | 'openChannelRequest'
@@ -45,24 +44,26 @@ export class IPCWalletBackend implements WalletBackend<{}> {
   }
 
   updateNotificationRequest(req: UpdateNotificationRequest): Promise<{ accepted?: boolean | undefined }> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _) => {
       // Make sure we send the serialized state, otherwise we have to account for weird IPC serialization issues.
-      const encodedState = wire.State.encode(req.state!).finish()
-      const res = process.send!({
-        type: 'updateNotificationRequest',
-        req: {
-          encodedState: encodedState,
-        },
+      console.log("wallet: updateNotificationRequest: state = ", req.state!)
+      //const encodedState = wire.State.encode(req.state!).finish()
+      //console.log("wallet: updateNotificationRequest: encodedState = ", encodedState)
+      
+      /*const res = process.send!({
+      //  type: 'updateNotificationRequest',
+        req
       })
       if (!res) {
         return reject(new Error('Failed to send IPC message'))
-      }
+      }*/
+      resolve({ accepted: true })
 
-      process.once('message', (message: { type: IPCMessageResponse; req: unknown }) => {
+      /*process.once('message', (message: { type: IPCMessageResponse; req: unknown }) => {
         if (message.type === 'updateNotificationResponse') {
           return resolve(message.req as any)
         }
-      })
+      })*/
     })
   }
 
